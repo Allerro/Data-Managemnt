@@ -1,0 +1,9 @@
+#Add new variable(s)
+#Set target variables to Double integer type
+#Enable editing
+#Open field calculator
+#ENSURE PARSER = PYTHON
+
+Latitude = !VariableName![:!VariableName!.index(',')] #Extracts Latitude from WGS 1984 'X,Y'
+
+Longitude = !VariableName![!VariableName!.index(',')+2:] #Extracts Longitude from WGS 1984 'X,Y'
