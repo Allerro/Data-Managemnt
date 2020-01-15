@@ -1,0 +1,106 @@
+COMMENT Be sure to replace FILE LOCATION
+COMMENT Let VICTIMS be active data field
+
+GET DATA 
+  /TYPE=XLSX 
+  /FILE='N:\AIN\Exploratory\AIN Export 1-15-20.xlsx' 
+  /SHEET=name 'Incidents' 
+  /CELLRANGE=FULL 
+  /READNAMES=ON 
+  /LEADINGSPACES IGNORE=YES 
+  /TRAILINGSPACES IGNORE=YES 
+  /DATATYPEMIN PERCENTAGE=95.0 
+  /HIDDEN IGNORE=YES. 
+EXECUTE. 
+DATASET NAME Incidents WINDOW=ASIS.
+
+GET DATA 
+  /TYPE=XLSX 
+  /FILE='N:\AIN\Exploratory\AIN Export 1-15-20.xlsx' 
+  /SHEET=name 'Victims' 
+  /CELLRANGE=FULL 
+  /READNAMES=ON 
+  /LEADINGSPACES IGNORE=YES 
+  /TRAILINGSPACES IGNORE=YES 
+  /DATATYPEMIN PERCENTAGE=95.0 
+  /HIDDEN IGNORE=YES. 
+EXECUTE. 
+DATASET NAME Victims WINDOW=FRONT.
+
+GET DATA 
+  /TYPE=XLSX 
+  /FILE='N:\AIN\Exploratory\AIN Export 1-15-20.xlsx' 
+  /SHEET=name 'Injury Agents' 
+  /CELLRANGE=FULL 
+  /READNAMES=ON 
+  /LEADINGSPACES IGNORE=YES 
+  /TRAILINGSPACES IGNORE=YES 
+  /DATATYPEMIN PERCENTAGE=95.0 
+  /HIDDEN IGNORE=YES. 
+EXECUTE. 
+DATASET NAME InjuryAgents WINDOW=ASIS. 
+
+GET DATA 
+  /TYPE=XLSX 
+  /FILE='N:\AIN\Exploratory\AIN Export 1-15-20.xlsx' 
+  /SHEET=name 'OIICS' 
+  /CELLRANGE=FULL 
+  /READNAMES=ON 
+  /LEADINGSPACES IGNORE=YES 
+  /TRAILINGSPACES IGNORE=YES 
+  /DATATYPEMIN PERCENTAGE=95.0 
+  /HIDDEN IGNORE=YES. 
+EXECUTE. 
+DATASET NAME OIICS WINDOW=ASIS.
+
+COMMENT All Data has been imported into separate sheets. 'Victims' should be the active data set
+
+COMMENT The following block identifies duplicate cases and deletes them.
+
+DATASET ACTIVATE Victims. 
+* Identify Duplicate Cases. 
+SORT CASES BY VictimSK(A). 
+MATCH FILES 
+  /FILE=* 
+  /BY VictimSK 
+  /FIRST=PrimaryFirst 
+  /LAST=PrimaryLast. 
+DO IF (PrimaryFirst). 
+COMPUTE  MatchSequence=1-PrimaryLast. 
+ELSE. 
+COMPUTE  MatchSequence=MatchSequence+1. 
+END IF. 
+LEAVE  MatchSequence. 
+FORMATS  MatchSequence (f7). 
+COMPUTE  InDupGrp=MatchSequence>0. 
+SORT CASES InDupGrp(D). 
+MATCH FILES 
+  /FILE=* 
+  /DROP=PrimaryFirst InDupGrp MatchSequence. 
+VARIABLE LABELS  PrimaryLast 'Indicator of each last matching case as Primary'. 
+VALUE LABELS  PrimaryLast 0 'Duplicate Case' 1 'Primary Case'. 
+VARIABLE LEVEL  PrimaryLast (ORDINAL). 
+FREQUENCIES VARIABLES=PrimaryLast.
+
+COMMENT The following CANNOT be reversed
+
+SELECT IF (PrimaryLast=1).
+EXECUTE.
+
+COMMENT The following block deletes the identifier variable for Identify Duplicates
+
+DELETE VARIABLES PrimaryLast.
+EXECUTE.
+
+COMMENT The following block merges files to the 'Victims' data set
+
+SORT CASES BY CaseReportFormID IncidentSK VictimSK. 
+DATASET ACTIVATE OIICS. 
+SORT CASES BY CaseReportFormID IncidentSK VictimSK. 
+DATASET ACTIVATE Victims. 
+MATCH FILES /FILE=* 
+  /FILE='OIICS' 
+  /BY CaseReportFormID IncidentSK VictimSK. 
+EXECUTE.
+
+COMMENT Incomplete - Finish later
